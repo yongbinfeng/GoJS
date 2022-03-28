@@ -80,13 +80,14 @@ go.GraphObject.defineBuilder("HyperlinkText", function(args) {
     var tb = go.GraphObject.make(go.TextBlock,
                 {
                   "_url": url,
+                  isUnderline: true,
                   cursor: "pointer",
                   mouseEnter: function(e, obj) {
                     var u = obj._url;
                     if (typeof u === "function") u = u(obj.findBindingPanel());
                     if (u) obj.isUnderline = true;
                   },
-                  mouseLeave: function(e, obj) { obj.isUnderline = false; },
+                  mouseLeave: function(e, obj) { obj.isUnderline = true; },
                   click: click,  // defined above
                   toolTip: tooltip // shared by all HyperlinkText textblocks
                 }
@@ -123,7 +124,7 @@ go.GraphObject.defineBuilder("HyperlinkText", function(args) {
         },
         mouseLeave: function(e, panel) {
           var tb = findTextBlock(panel);
-          if (tb !== null) tb.isUnderline = false;
+          if (tb !== null) tb.isUnderline = true;
         },
         click: click,  // defined above
         toolTip: tooltip  // shared by all HyperlinkText panels

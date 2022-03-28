@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"/>
+<meta name="description" content="Roadmap for the SONIC technical developments."/> 
+<link rel="stylesheet" href="../assets/css/style.css"/> 
+<title>SONIC Roadmap</title>
+</head>
+
+<body>
+  <h1><center>SONIC Development Roadmap</center></h1>
+    <!-- Start of GoJS sample code -->
+    
+    <script src="../release/go.js"></script>
+    <div id="allSampleContent" class="p-4 w-full">
+    <script src="../extensions/Figures.js"></script>
+    <script src="../extensions/HyperlinkText.js"></script>
+    <script id="code">
+    function init() {
+
+      // Since 2.2 you can also author concise templates with method chaining instead of GraphObject.make
+      // For details, see https://gojs.net/latest/intro/buildingObjects.html
+      const $ = go.GraphObject.make;  // for conciseness in defining templates
+      myDiagram =
+        $(go.Diagram, "myDiagramDiv",
+          {
+            // have mouse wheel events zoom in and out instead of scroll up and down
+            "toolManager.mouseWheelBehavior": go.ToolManager.WheelZoom,
+            initialAutoScale: go.Diagram.Uniform,
+            "linkingTool.direction": go.LinkingTool.ForwardsOnly,
+
+            allowCopy: false,
+            "draggingTool.dragsTree": true,
+            "commandHandler.deletesTree": true,
+            layout:
+              $(go.TreeLayout,
+                { angle: 90, arrangement: go.TreeLayout.ArrangementFixedRoots }),
+            "undoManager.isEnabled": true
+          });
+
+      // when the document is modified, add a "*" to the title and enable the "Save" button
+      myDiagram.addDiagramListener("Modified", e => {
+        var button = document.getElementById("SaveButton");
+        if (button) button.disabled = !myDiagram.isModified;
+        var idx = document.title.indexOf("*");
+        if (myDiagram.isModified) {
+          if (idx < 0) document.title += "*";
+        } else {
+          if (idx >= 0) document.title = document.title.slice(0, idx);
+        }
+      });
+
+      var bluegrad = $(go.Brush, "Linear", { 0: "#C4ECFF", 1: "#70D4FF" });
+      var greengrad = $(go.Brush, "Linear", { 0: "#B1E2A5", 1: "#7AE060" });
+      var yellowgrad = $(go.Brush, "Linear", { 0: "#FFD27F", 1: "#FFDB99"});
+
+      // each action is represented by a shape and some text
+      var actionTemplate =
+        $(go.Panel, "Horizontal",
+          {
+            maxSize: new go.Size(300, 700),
+            alignment: go.Spot.Left,
+          },
+          $("CheckBox", "choice",
+            { 
+              //"ButtonIcon.stroke": "green",
+              "ButtonBorder.figure": "Rectangle", "ButtonBorder.stroke": "black",
+              "ButtonIcon.figure": "Rectangle", "ButtonIcon.fill": "green",
+              "ButtonIcon.strokeWidth": 0,
+              alignment: go.Spot.TopLeft,
+            },
+          ),
+          $(go.TextBlock,
+            { 
+              font: "10pt Verdana, sans-serif",
+              alignment: go.Spot.Left,
+              margin: 3,
+              maxSize: new go.Size(260,700),
+              minSize: new go.Size(0,0),
+            },
+            new go.Binding("text")
+          ),
+          $("HyperlinkText",
+            function(panel) { return panel.data.url},
+            function(panel) { return panel.data.urltext},
+            {
+              alignment: go.Spot.Left,
+              font: "10pt Verdana, sans-serif",
+            },
+          ),
+        );
+
+      // each regular Node has body consisting of a title followed by a collapsible list of actions,
+      // controlled by a PanelExpanderButton, with a TreeExpanderButton underneath the body
+      myDiagram.nodeTemplate =  // the default node template
+        $(go.Node, "Vertical",
+          { selectionObjectName: "BODY", isTreeExpanded: false},
+          new go.Binding("isTreeExpanded"),
+          // the main "BODY" consists of a RoundedRectangle surrounding nested Panels
+          $(go.Panel, "Auto",
+            { name: "BODY" },
+            $(go.Shape, "Rectangle",
+              { fill: bluegrad, stroke: null },
+              new go.Binding("fill", "color")
+            ),
+            $(go.Panel, "Vertical",
+              { margin: 3 ,maxSize: new go.Size(300,200)},
+              // the title
+              $(go.TextBlock,
+                {
+                  //stretch: go.GraphObject.Fill,
+                  font: "bold 12pt Verdana, sans-serif",
+                  alignment: go.Spot.Left,
+                },
+                new go.Binding("text", "core")
+              ),
+              // the optional list of actions
+              $(go.Panel, "Vertical",
+                { 
+                  stretch: go.GraphObject.Horizontal, 
+                  visible: false 
+                },  // not visible unless there is more than one action
+                new go.Binding("visible", "actions", acts => (Array.isArray(acts) && acts.length > 0)),
+                // headered by a label and a PanelExpanderButton inside a Table
+                $(go.Panel, "Table",
+                  { stretch: go.GraphObject.Horizontal },
+                  $(go.TextBlock, "Details",
+                    {
+                      alignment: go.Spot.Left,
+                      font: "10pt Verdana, sans-serif"
+                    }
+                  ),
+                  $("PanelExpanderButton", "COLLAPSIBLE",  // name of the object to make visible or invisible
+                    { column: 1, alignment: go.Spot.Right }
+                  )
+                ), // end Table panel
+                // with the list data bound in the Vertical Panel
+                $(go.Panel, "Vertical",
+                  {
+                    name: "COLLAPSIBLE",  // identify to the PanelExpanderButton
+                    padding: 2,
+                    stretch: go.GraphObject.Vertical,  // take up whole available width
+                    background: "white",  // to distinguish from the node's body
+                    alignment: go.Spot.Left,  // thus no need to specify alignment on each element
+                    itemTemplate: actionTemplate,  // the Panel created for each item in Panel.itemArray
+                    visible: false,
+                    maxSize: new go.Size(300, 500),
+                  },
+                  new go.Binding("itemArray", "actions"),  // bind Panel.itemArray to nodedata.actions
+                )  // end action list Vertical Panel
+              )  // end optional Vertical Panel
+            )  // end outer Vertical Panel
+          ),  // end "BODY"  Auto Panel
+          $(go.Panel,  // this is underneath the "BODY"
+            { height: 17 },  // always this height, even if the TreeExpanderButton is not visible
+            $("TreeExpanderButton")
+          )
+        );
+
+      // define another of Node:
+      myDiagram.nodeTemplateMap.add("Terminal",
+        $(go.Node, "Spot",
+          $(go.Shape, "Circle",
+            { width: 55, height: 55, fill: greengrad, stroke: null }
+          ),
+          $(go.TextBlock,
+            { font: "10pt Verdana, sans-serif" },
+            new go.Binding("text")
+          )
+        )
+      );
+
+      myDiagram.linkTemplate =
+        $(go.Link,  // the whole link panel
+        {
+          routing: go.Link.AvoidsNodes,
+          curve: go.Link.JumpOver,
+          corner: 5, toShortLength: 4,
+          relinkableFrom: true,
+          relinkableTo: true,
+          reshapable: true,
+          resegmentable: true,
+          // mouse-overs subtly highlight links:
+          mouseEnter: (e, link) => link.findObject("HIGHLIGHT").stroke = "rgba(30,144,255,0.2)",
+          mouseLeave: (e, link) => link.findObject("HIGHLIGHT").stroke = "transparent",
+          selectionAdorned: false
+        },
+        new go.Binding("points").makeTwoWay(),
+        $(go.Shape,  // the highlight shape, normally transparent
+          { isPanelMain: true, strokeWidth: 8, stroke: "transparent", name: "HIGHLIGHT" }),
+        $(go.Shape,  // the link path shape
+          { isPanelMain: true, stroke: "gray", strokeWidth: 2 },
+          new go.Binding("stroke", "isSelected", sel => sel ? "dodgerblue" : "gray").ofObject()),
+        $(go.Shape,  // the arrowhead
+          { toArrow: "standard", strokeWidth: 0, fill: "gray" }),
+        $(go.Panel, "Auto",  // the link label, normally not visible
+          { visible: false, name: "LABEL", segmentIndex: 2, segmentFraction: 0.5 },
+          new go.Binding("visible", "visible").makeTwoWay(),
+          $(go.Shape, "RoundedRectangle",  // the label shape
+            { fill: "#F8F8F8", strokeWidth: 0 }),
+          $(go.TextBlock, "Yes",  // the label
+            {
+              textAlign: "center",
+              font: "10pt helvetica, arial, sans-serif",
+              stroke: "#333333",
+              editable: true
+            },
+            new go.Binding("text").makeTwoWay())
+        )
+      );
+
+
+      var nodeDataArray = [
+        {
+          key: 1, core: "Developments, tests, and benchmarks for running SONIC in Production", color: "lightgray", isTreeExpanded: true,
+        },
+        {
+          key: 2, core: "SONIC MiniAOD Workflow Integration", color: "lightgray",
+          actions: [
+            { text: "Integrate SONIC MiniAOD Workflow into central CMSSW"},
+          ]
+        },
+        { key: 5, core: "Present in the ML Production Group meeting", color: bluegrad,
+          actions: [
+            {text: "Discuss with ML Production group about the results, plans, and technical developments"},
+            {text: "March 14th", urltext: "ML Production Meeting", url:"https://indico.cern.ch/event/1128080/#2-sonic-updates", choice: true},
+          ]
+        },
+        { 
+          key: 6, core: "Present in the JetMET and Tau POG meetings", color: bluegrad,
+          actions: [
+            { text: "Discuss about the ParticleNet, DeepTau, and DeepMET producer changes; the model file re-organization, and the workflow."},
+            { text: "March 21st", urltext: "Tau POG Meeting", url:"https://indico.cern.ch/event/1139426/#7-deeptauid-inference-with-son", choice: true},
+            { text: "March 28th", urltext: "JetMET POG", url:"https://indico.cern.ch/event/1143469/#34-particlenet-and-deepmet-wit"},
+          ]
+        },
+        { 
+          key: 7, core: "Present in the RECO meetings", color:bluegrad,
+          actions: [
+            { text: "Similar to the POG Meetings"},
+          ],
+        },
+        {
+          key: 8, core: "Integrate the SONIC MiniAOD workflow into CMSSW", color:bluegrad,
+          actions: [
+            { text: "Submit the PR to CMSSW; get POGs and RECO approved; merge into official CMSSW"},
+          ],
+        },
+        {
+          key: "triton", core: "Triton-related feature Integrations", color:"lightgray",
+          actions: [
+            { text: "Integrate Triton-related features into SONIC and CMSSW"},
+          ],
+        }, 
+        {
+          key: 10, core: "Ragged batching", color: "lightgray",
+        },
+        {
+          key: 11, core: "Triton Developments", color: greengrad,
+          actions: [
+            { text: "Server-side integration", choice: true},
+            { text: "Client-side interface change"},
+          ],
+        },
+        {
+          key: 12, core: "SONIC developments", color: bluegrad,
+          actions: [
+            { text: "Ragged batching in CMSSW. (Some interface change accordingly)." },
+            { text: "Update the ParticleNet SONIC producer accordingly" },
+          ],
+        },
+        {
+          key: "auth", core: "Authentication", color: "lightgray",
+        },
+        {
+          key: "auth_server", core: "Triton server authentication", color: greengrad,
+        },
+        {
+          key: "auth_cmssw", core: "Authentication in CMSSW", color: bluegrad,
+        },
+        {
+          key: "triton_otherfeatures", core: "Other New Triton features (to be implemented)", color:greengrad,
+          actions: [
+            { text: "GPU compression"},
+            { text: "Logging API"},
+            { text: "Handing of custom operations"},
+          ],
+        },
+        {
+          key: "deploy", core: "Deployments", color: "lightgray",
+        },
+        {
+          key: "container", core: "Server container", color: "lightgray",
+        },
+        {
+          key: "customize", core: "Container customization", color: bluegrad,
+          actions: [
+            { text: "Study different container customizations: CentOS vs Ubutu, dedicated backends vs inclusive (TF, PyTorch, ONNX, etc all together), etc"},
+          ],
+        },
+        {
+          key: "container_build", core: "Containers in cmsbuild", color: yellowgrad,
+          actions: [
+            { text: "Build containers with cms-build"}
+          ],
+        },
+        {
+          key: "version", core: "Versioning", color: "lightgray",
+        },
+        {
+          key: "version_cmssw", core: "Container version sync with CMSSW", color: bluegrad,
+        },
+        {
+          key: "version_track", core: "Provenance tracking in production", color: yellowgrad,
+          actions: [
+            { text: "Track model version/checksum, server url, etc during the production job running"},
+          ],
+        },
+        {
+          key: "version_site", core: "Coordination of server container versions at different sites", color: yellowgrad,
+        },
+        {
+          key: "checksum_triton", core: "Client-side model checksum in Triton", color: greengrad,
+        },
+        {
+          key: "checksum_sonic", core: "Client-side model checksum in SONIC and CMSSW", color: bluegrad, 
+        },
+        {
+          key: "production", core: "Tests and benchmarks", color: "lightgray",
+        },
+        {
+          key: "performance", core: "Performance studies and benchmarks", color: "lightgray",
+          actions: [
+            { text: "Performance tests on difference coprocessors, with small and large scales; some general metrics to watch on including CPU/GPU utilizations, memory usage, and network usage, etc."}
+          ],
+        },
+        {
+          key: "performance_model", core: "Individual models", color: bluegrad,
+          actions: [
+            { text: "Benchmark the per-model inference throuhgputs and latencys on CPUs and GPUs using perf_client and model_analyzer in Triton; document the results.", choice: true},
+            { text: "Standardize such processes and convert to well-established processes."}
+          ],
+        },
+        {
+          key: "performance_external", core: "Improve ExternalWork Profiling in CMSSW", color: yellowgrad,
+        },
+        {
+          key: "performance_cpu", core: "CPU inferences", color: bluegrad,
+          actions: [
+            {text: "CPU usage test: Measure throughputs with fully-loaded nodes and/or k8s cpu restrictions; also check \"thread usage\""},
+            {text: "TF CPU restriction: For TF backend can explore TF CPU restriction."}
+          ],
+        },
+        {
+          key: "performance_scale", core: "Scaling tests", color: bluegrad,
+          actions: [
+            {text: "Scale the number of production jobs; vary the fraction of SONIC inferences; switch between different datasets; test and benchmark the results"},
+          ]
+        },
+        {
+          key: "retry", core: "Retry/Fallback for robustness", color: bluegrad,
+          actions: [
+            { text: "Change the client server in flight: Client can get new server at any time"},
+            { text: "Manual retry schema: Add methods to specify exact fallback instructions"},
+            { text: "Automatic retry schema: Conditions to optimize server choice"},
+          ],
+        },
+        {
+          key: "operation", core: "Operations", color: yellowgrad,
+          actions: [
+            { text: "Singularity-in-Singularity support: Get more sites to support it, with singularity version, unpriviledged user namepsace setting"},
+            { text: "Preferred inference server specification: Sites put URLs in site local configuration"},
+            { text: "Gateway: Lightweight meta-server to provide/update server URLs for jobs, e.g., via PUPPET"},
+            { text: "Site Resource Allocation"},
+            { text: "RelVal tests"},
+          ],
+        },
+
+      ];
+      var linkDataArray = [
+        { from: 1,  to: 2 },
+        { from: 2,  to: 5 },
+        { from: 6,  to: 7 },
+        { from: 5,  to: 6 },
+        { from: 7,  to: 8 },
+        { from: 1,  to: "triton" },
+        { from: "triton",  to: 10},
+        { from: 10, to: 11},
+        { from: 11, to: 12},
+        { from: "triton",  to: "auth"},
+        { from: "auth", to: "auth_server"},
+        { from: "auth_server", to: "auth_cmssw"},
+        { from: "triton", to: "triton_otherfeatures"},
+        { from: 1, to: "deploy"},
+        { from: "deploy", to: "container"},
+        { from: "deploy", to: "version"},
+        { from: "container", to: "customize"},
+        { from: "customize", to: "container_build"},
+        { from: "version", to: "checksum_triton"},
+        { from: "checksum_triton", to: "checksum_sonic"},
+        { from: "version", to: "version_cmssw"},
+        { from: "version_cmssw", to: "version_track"},
+        { from: "version_cmssw", to: "version_site"},
+        { from: 1, to: "production"},
+        { from: "production", to: "performance"},
+        { from: "performance", to: "performance_model"},
+        { from: "performance", to: "performance_cpu"},
+        { from: "performance", to: "performance_external"},
+        { from: "performance_cpu", to: "performance_scale"},
+        { from: "performance_model", to: "performance_scale"},
+        { from: "performance_external", to: "performance_scale"},
+        { from: "production", to: "retry"},
+        { from: "production", to: "operation"},
+      ];
+      // create the Model with the above data, and assign to the Diagram
+      myDiagram.model = new go.GraphLinksModel(
+        {
+          copiesArrays: true,
+          copiesArrayObjects: true,
+          nodeDataArray: nodeDataArray,
+          linkDataArray: linkDataArray
+        });
+
+      var palette =
+        $(go.Palette, "myPaletteDiv",  // create a new Palette in the HTML DIV element
+          {
+            // share the template map with the Palette
+            nodeTemplateMap: myDiagram.nodeTemplateMap,
+            autoScale: go.Diagram.Uniform  // everything always fits in viewport
+          });
+
+      palette.model.nodeDataArray = 
+        [
+          { core: "General Items", color: "lightgray"},
+          { core: "SONIC Team", color: bluegrad},
+          { core: "NVIDIA Triton", color: greengrad},
+          { core: "CMS/Production", color: yellowgrad},
+        ];
+
+
+    }
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+
+<div id="sample">
+  <div style="width: 100%; display: flex; justify-content: space-between">
+    <div id="myPaletteDiv" style="width: 100px; margin-right: 2px; background-color: whitesmoke; border: solid 1px black"></div>
+    <div id="myDiagramDiv" style="border: solid 1px black; width:100%; height:500px"></div>
+  </div>
+  <br>
+  <p>
+    <em><b>SONIC</b></em>, which stands for Service with Optimized Network Inference with Coprocessors, is a relatively new way to run both ML inferences and domain algorithms on remote and local coprocessors. In the CMSSW implementation, the <a href="https://github.com/cms-sw/cmssw/tree/master/HeterogeneousCore/SonicCore" target="_blank">SONIC producers</a> handles the IOs and can make <b>asynchronous</b> to the (remote) server; <a href="https://github.com/triton-inference-server/server" target="_blank">NVIDIA Triton Inference Server</a> that runs in containers on the (remote) coprocessors will take the inputs from CMSSW clients, run the inferences, and send outputs back.
+  </p>
+  <p>
+    Compared with direct inferences, SONIC can potentially bring us many benefits (e.g., acceleration of algorithms; more degrees of configuration freedom; more efficient utilizations of coprocessors, etc). With the dramatic increase of the computing demands, doing <b>SONIC R&D</b> for the <b>High-luminosity LHC</b> is certainly worthwhile.
+  </p>
+  <p>
+    SONIC can run at different production stages. Over the past year, we have prepared a SONIC-MiniAOD workflow, where we run the Ultra-Legacy MiniAOD production workflow, with thee intensive ML inference tasks, ParticleNet, DeepTau, and DeepMET running with SONIC. The <a href="https://github.com/fastmachinelearning/sonic-workflows" target="_blank">workflow</a>, three <a href="https://github.com/cms-sw/cmssw/compare/CMSSW_12_0_0_pre5...fastmachinelearning:CMSSW_12_0_0_pre5_SONIC?expand=1" target="_blank">SONIC Producers</a>, and the corresponding <a href="https://github.com/fastmachinelearning/sonic-models/tree/master/models" target="_blank">model config files</a> are currently stored in our private repositories. We have tested at different sites - Google Cloud, Purdue Tier2, and NCHC-TWCC. The results were presented in various meetings, such as the <a href="https://indico.cern.ch/event/1087458/#2-sonic-status" target="_blank">O&C Meeting</a> on Nov. 10th, 2021 and the <a href="https://indico.cern.ch/event/1088913/#5-sonic-update" target="_blank">USCMS Blueprint Meeting</a> on Dec. 1st, 2021.
+  </p>
+  <p>
+    To continue the SONIC R&D in order to make it for the <b>HL-LHC</b>, this page inlcudes the current plans for the developments, tests, and some benchmarks that we think are going to be useful.
+  </p>
+</div>
+    </div>
+    <!-- * * * * * * * * * * * * * -->
+    <!--  End of GoJS sample code  -->
+  </div>
+</body>
+</html>
