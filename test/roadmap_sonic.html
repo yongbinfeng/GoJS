@@ -327,6 +327,14 @@
           key: "checksum_sonic", core: "Client-side model checksum in SONIC and CMSSW", color: bluegrad, 
         },
         {
+          key: "allocation", core: "Resource Allocation", color: "lightgray",
+          actions: [
+            { text: "Locate (site) resources"},
+            { text: "Launch servers based on requested sources from different jobs"},
+            { text: "Dynamically balance between different servers. (Triton already has some load-balancing features implemented)"},
+          ],
+        },
+        {
           key: "production", core: "Tests and benchmarks", color: "lightgray",
         },
         {
@@ -395,6 +403,7 @@
         { from: 1, to: "deploy"},
         { from: "deploy", to: "container"},
         { from: "deploy", to: "version"},
+        { from: "deploy", to: "allocation"},
         { from: "container", to: "customize"},
         { from: "customize", to: "container_build"},
         { from: "version", to: "checksum_triton"},
@@ -403,6 +412,8 @@
         { from: "version_cmssw", to: "version_track"},
         { from: "version_cmssw", to: "version_site"},
         { from: 1, to: "production"},
+        { from: "production", to: "retry"},
+        { from: "production", to: "operation"},
         { from: "production", to: "performance"},
         { from: "performance", to: "performance_model"},
         { from: "performance", to: "performance_cpu"},
@@ -410,8 +421,7 @@
         { from: "performance_cpu", to: "performance_scale"},
         { from: "performance_model", to: "performance_scale"},
         { from: "performance_external", to: "performance_scale"},
-        { from: "production", to: "retry"},
-        { from: "production", to: "operation"},
+
       ];
       // create the Model with the above data, and assign to the Diagram
       myDiagram.model = new go.GraphLinksModel(
@@ -459,7 +469,7 @@
     SONIC can run at different production stages. Over the past year, we have prepared a SONIC-MiniAOD workflow, where we run the Ultra-Legacy MiniAOD production workflow, with thee intensive ML inference tasks, ParticleNet, DeepTau, and DeepMET running with SONIC. The <a href="https://github.com/fastmachinelearning/sonic-workflows" target="_blank">workflow</a>, three <a href="https://github.com/cms-sw/cmssw/compare/CMSSW_12_0_0_pre5...fastmachinelearning:CMSSW_12_0_0_pre5_SONIC?expand=1" target="_blank">SONIC Producers</a>, and the corresponding <a href="https://github.com/fastmachinelearning/sonic-models/tree/master/models" target="_blank">model config files</a> are currently stored in our private repositories. We have tested at different sites - Google Cloud, Purdue Tier2, and NCHC-TWCC. The results were presented in various meetings, such as the <a href="https://indico.cern.ch/event/1087458/#2-sonic-status" target="_blank">O&C Meeting</a> on Nov. 10th, 2021 and the <a href="https://indico.cern.ch/event/1088913/#5-sonic-update" target="_blank">USCMS Blueprint Meeting</a> on Dec. 1st, 2021.
   </p>
   <p>
-    To continue the SONIC R&D in order to make it for the <b>HL-LHC</b>, this page inlcudes the current plans for the developments, tests, and some benchmarks that we think are going to be useful.
+    To continue the SONIC R&D in order to make it for the <b>HL-LHC</b>, this page inlcudes the current plans for the developments, tests, and some benchmarks that we think are going to be useful. Plans are still very flexible - comments and suggestions are more than welcome!
   </p>
 </div>
     </div>
